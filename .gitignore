@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+data/
+*.sqlite
+*.sqlite3
+
+# Sites generados (en desarrollo)
+sites/
+
+# Build
+frontend/dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Uploads temporales
+uploads/temp/
+
+# Backups locales
+backups/

@@ -1,0 +1,35 @@
+{
+  "name": "mcweb-fast",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de hosting multi-cliente con IA - Tu web en minutos",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon backend/server.js",
+    "client": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "node backend/server.js",
+    "init-db": "node backend/database/init.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sql.js": "^1.9.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "sanitize-html": "^2.11.0",
+    "node-fetch": "^3.3.2",
+    "sharp": "^0.33.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
