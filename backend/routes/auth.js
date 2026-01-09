@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Buscar usuario
-    const user = getUserByEmail(email.toLowerCase().trim());
+    const user = await getUserByEmail(email.toLowerCase().trim());
 
     if (!user) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Actualizar último acceso
-    updateUserLastAccess(user.id);
+    await updateUserLastAccess(user.id);
 
     // Generar token
     const token = generateToken(user);
@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
     // Obtener datos adicionales si es cliente
     let clienteData = null;
     if (user.rol === 'cliente') {
-      clienteData = getClienteByUsuarioId(user.id);
+      clienteData = await getClienteByUsuarioId(user.id);
     }
 
     res.json({
@@ -96,7 +96,7 @@ router.post('/cambiar-password', requireAuth, async (req, res) => {
     }
 
     // Obtener usuario actual
-    const user = getUserByEmail(req.user.email);
+    const user = await getUserByEmail(req.user.email);
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -113,7 +113,7 @@ router.post('/cambiar-password', requireAuth, async (req, res) => {
     const newPasswordHash = await bcrypt.hash(passwordNueva, 10);
 
     // Actualizar contraseña
-    updateUserPassword(user.id, newPasswordHash);
+    await updateUserPassword(user.id, newPasswordHash);
 
     res.json({
       success: true,
@@ -130,12 +130,12 @@ router.post('/cambiar-password', requireAuth, async (req, res) => {
  * GET /api/auth/me
  * Obtener datos del usuario actual
  */
-router.get('/me', requireAuth, (req, res) => {
+router.get('/me', requireAuth, async (req, res) => {
   try {
     let clienteData = null;
 
     if (req.user.rol === 'cliente') {
-      clienteData = getClienteByUsuarioId(req.user.id);
+      clienteData = await getClienteByUsuarioId(req.user.id);
     }
 
     res.json({

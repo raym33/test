@@ -10,11 +10,8 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const {
   createUser,
   createCliente,
-  getAllClientes,
-  getClienteByUsuarioId,
-  getUserById
+  getAllClientes
 } = require('../database/db');
-const { getDatabase } = require('../database/init');
 
 /**
  * GET /api/clientes
@@ -22,7 +19,7 @@ const { getDatabase } = require('../database/init');
  */
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const clientes = getAllClientes();
+    const clientes = await getAllClientes();
 
     res.json({
       success: true,
@@ -52,13 +49,13 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
  */
 router.get('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const db = getDatabase();
-    const cliente = db.prepare(`
+    const { getOne } = require('../database/db');
+    const cliente = await getOne(`
       SELECT c.*, u.email, u.nombre, u.activo, u.fecha_creacion, u.ultimo_acceso
       FROM clientes c
       JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.id = ?
-    `).get(req.params.id);
+    `, [req.params.id]);
 
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -111,7 +108,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     const passwordHash = await bcrypt.hash(passwordTemporal, 10);
 
     // Crear usuario
-    const usuarioId = createUser({
+    const usuarioId = await createUser({
       email: email.toLowerCase().trim(),
       passwordHash,
       nombre: nombre.trim(),
@@ -119,7 +116,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     });
 
     // Crear cliente
-    const clienteId = createCliente({
+    const clienteId = await createCliente({
       usuarioId,
       telefono: telefono?.trim() || null,
       empresa: empresa?.trim() || null,
@@ -161,24 +158,24 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     const { nombre, empresa, telefono, plan, activo } = req.body;
     const clienteId = req.params.id;
 
-    const db = getDatabase();
+    const { getOne, runQuery } = require('../database/db');
 
     // Obtener cliente actual
-    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+    const cliente = await getOne('SELECT * FROM clientes WHERE id = ?', [clienteId]);
 
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
     // Actualizar cliente
-    db.prepare(`
+    await runQuery(`
       UPDATE clientes SET empresa = ?, telefono = ?, plan = ? WHERE id = ?
-    `).run(
+    `, [
       empresa?.trim() || cliente.empresa,
       telefono?.trim() || cliente.telefono,
       plan || cliente.plan,
       clienteId
-    );
+    ]);
 
     // Actualizar usuario si hay cambios
     if (nombre !== undefined || activo !== undefined) {
@@ -197,7 +194,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 
       if (updates.length > 0) {
         values.push(cliente.usuario_id);
-        db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+        await runQuery(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`, values);
       }
     }
 
@@ -219,17 +216,17 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const clienteId = req.params.id;
-    const db = getDatabase();
+    const { getOne, runQuery } = require('../database/db');
 
     // Obtener cliente
-    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+    const cliente = await getOne('SELECT * FROM clientes WHERE id = ?', [clienteId]);
 
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
     // Eliminar usuario (cascade eliminará cliente y sitios por FK)
-    db.prepare('DELETE FROM usuarios WHERE id = ?').run(cliente.usuario_id);
+    await runQuery('DELETE FROM usuarios WHERE id = ?', [cliente.usuario_id]);
 
     res.json({
       success: true,
@@ -249,10 +246,10 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
 router.post('/:id/reset-password', requireAuth, requireAdmin, async (req, res) => {
   try {
     const clienteId = req.params.id;
-    const db = getDatabase();
+    const { getOne, runQuery } = require('../database/db');
 
     // Obtener cliente
-    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+    const cliente = await getOne('SELECT * FROM clientes WHERE id = ?', [clienteId]);
 
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -263,9 +260,9 @@ router.post('/:id/reset-password', requireAuth, requireAdmin, async (req, res) =
     const passwordHash = await bcrypt.hash(nuevaPassword, 10);
 
     // Actualizar contraseña
-    db.prepare(`
+    await runQuery(`
       UPDATE usuarios SET password_hash = ?, debe_cambiar_password = 1 WHERE id = ?
-    `).run(passwordHash, cliente.usuario_id);
+    `, [passwordHash, cliente.usuario_id]);
 
     res.json({
       success: true,

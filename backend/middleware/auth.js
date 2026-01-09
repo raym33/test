@@ -36,7 +36,7 @@ function verifyToken(token) {
 /**
  * Middleware: Requiere autenticación
  */
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -51,7 +51,7 @@ function requireAuth(req, res, next) {
   }
 
   // Obtener usuario actualizado de la base de datos
-  const user = getUserById(decoded.id);
+  const user = await getUserById(decoded.id);
 
   if (!user || !user.activo) {
     return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
@@ -68,7 +68,7 @@ function requireAuth(req, res, next) {
 
   // Si es cliente, añadir datos del cliente
   if (user.rol === 'cliente') {
-    const cliente = getClienteByUsuarioId(user.id);
+    const cliente = await getClienteByUsuarioId(user.id);
     if (cliente) {
       req.cliente = cliente;
     }
@@ -95,7 +95,7 @@ function requireAdmin(req, res, next) {
 /**
  * Middleware: Requiere que el usuario tenga acceso al sitio
  */
-function requireSiteAccess(req, res, next) {
+async function requireSiteAccess(req, res, next) {
   const sitioId = parseInt(req.params.sitioId || req.params.id);
 
   if (!sitioId) {
@@ -110,7 +110,7 @@ function requireSiteAccess(req, res, next) {
   // Cliente solo tiene acceso a sus propios sitios
   if (req.cliente) {
     const { getSitioById } = require('../database/db');
-    const sitio = getSitioById(sitioId);
+    const sitio = await getSitioById(sitioId);
 
     if (!sitio || sitio.cliente_id !== req.cliente.id) {
       return res.status(403).json({ error: 'No tienes acceso a este sitio' });
@@ -121,9 +121,9 @@ function requireSiteAccess(req, res, next) {
 }
 
 /**
- * Middleware: Autenticación opcional (para rutas públicas con funcionalidad extra para usuarios autenticados)
+ * Middleware: Autenticación opcional
  */
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -131,7 +131,7 @@ function optionalAuth(req, res, next) {
     const decoded = verifyToken(token);
 
     if (decoded) {
-      const user = getUserById(decoded.id);
+      const user = await getUserById(decoded.id);
       if (user && user.activo) {
         req.user = {
           id: user.id,
@@ -141,7 +141,7 @@ function optionalAuth(req, res, next) {
         };
 
         if (user.rol === 'cliente') {
-          const cliente = getClienteByUsuarioId(user.id);
+          const cliente = await getClienteByUsuarioId(user.id);
           if (cliente) {
             req.cliente = cliente;
           }

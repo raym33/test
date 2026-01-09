@@ -30,9 +30,9 @@ router.get('/', requireAuth, async (req, res) => {
     let sitios;
 
     if (req.user.rol === 'admin') {
-      sitios = getAllSitios();
+      sitios = await getAllSitios();
     } else {
-      sitios = getSitiosByClienteId(req.cliente.id);
+      sitios = await getSitiosByClienteId(req.cliente.id);
     }
 
     res.json({
@@ -63,7 +63,7 @@ router.get('/', requireAuth, async (req, res) => {
  */
 router.get('/plantillas', async (req, res) => {
   try {
-    const plantillas = getAllPlantillas();
+    const plantillas = await getAllPlantillas();
 
     res.json({
       success: true,
@@ -88,7 +88,7 @@ router.get('/plantillas', async (req, res) => {
  */
 router.get('/:id', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.id);
+    const sitio = await getSitioById(req.params.id);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -150,7 +150,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     // Obtener plantilla si se especificó
     let plantilla = null;
     if (plantillaId) {
-      plantilla = getPlantillaById(plantillaId);
+      plantilla = await getPlantillaById(plantillaId);
     }
 
     // Generar HTML inicial con Claude si hay configuración
@@ -180,7 +180,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     await guardarHTML(rutaArchivos, htmlInicial);
 
     // Crear registro en base de datos
-    const sitioId = createSitio({
+    const sitioId = await createSitio({
       clienteId,
       nombre: nombre.trim(),
       dominio: dominio?.toLowerCase().trim() || null,
@@ -193,7 +193,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     // Crear secciones por defecto
     const seccionesPorDefecto = ['hero', 'servicios', 'nosotros', 'contacto'];
     for (let i = 0; i < seccionesPorDefecto.length; i++) {
-      createSeccion({
+      await createSeccion({
         sitioId,
         nombre: seccionesPorDefecto[i],
         tipo: seccionesPorDefecto[i],
@@ -241,7 +241,7 @@ router.put('/:id', requireAuth, requireSiteAccess, async (req, res) => {
     const { nombre, dominio, activo, configuracion } = req.body;
     const sitioId = req.params.id;
 
-    const sitio = getSitioById(sitioId);
+    const sitio = await getSitioById(sitioId);
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
     }
@@ -254,7 +254,7 @@ router.put('/:id', requireAuth, requireSiteAccess, async (req, res) => {
     if (configuracion !== undefined) updates.configuracion = JSON.stringify(configuracion);
 
     if (Object.keys(updates).length > 0) {
-      updateSitio(sitioId, updates);
+      await updateSitio(sitioId, updates);
     }
 
     res.json({
@@ -276,7 +276,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const sitioId = req.params.id;
 
-    const sitio = getSitioById(sitioId);
+    const sitio = await getSitioById(sitioId);
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
     }
@@ -286,7 +286,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     await eliminarArchivosSitio(sitio.ruta_archivos);
 
     // Eliminar de base de datos
-    deleteSitio(sitioId);
+    await deleteSitio(sitioId);
 
     res.json({
       success: true,
@@ -305,7 +305,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
  */
 router.post('/:id/purgar-cache', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.id);
+    const sitio = await getSitioById(req.params.id);
 
     if (!sitio || !sitio.dominio) {
       return res.status(404).json({ error: 'Sitio no encontrado o sin dominio configurado' });

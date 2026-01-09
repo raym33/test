@@ -36,7 +36,7 @@ const upload = multer({
 router.post('/iniciar', async (req, res) => {
   try {
     const sessionId = crypto.randomUUID();
-    createWizardSession(sessionId);
+    await createWizardSession(sessionId);
 
     res.json({
       success: true,
@@ -58,7 +58,7 @@ router.post('/iniciar', async (req, res) => {
  */
 router.get('/plantillas', async (req, res) => {
   try {
-    const plantillas = getAllPlantillas();
+    const plantillas = await getAllPlantillas();
 
     res.json({
       success: true,
@@ -93,7 +93,7 @@ router.post('/paso/:paso', upload.fields([
       return res.status(400).json({ error: 'SessionId es requerido' });
     }
 
-    const session = getWizardSession(sessionId);
+    const session = await getWizardSession(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Sesión no encontrada. Inicia una nueva.' });
     }
@@ -162,7 +162,7 @@ router.post('/paso/:paso', upload.fields([
     }
 
     // Actualizar sesión
-    const sessionActualizada = updateWizardSession(sessionId, {
+    const sessionActualizada = await updateWizardSession(sessionId, {
       paso: paso + 1,
       datos: { ...datosActuales, ...nuevosDatos }
     });
@@ -191,7 +191,7 @@ router.post('/generar', async (req, res) => {
       return res.status(400).json({ error: 'SessionId es requerido' });
     }
 
-    const session = getWizardSession(sessionId);
+    const session = await getWizardSession(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Sesión no encontrada' });
     }
@@ -258,7 +258,7 @@ router.post('/generar', async (req, res) => {
     await guardarHTML(rutaArchivos, htmlGenerado);
 
     // Actualizar sesión con el sitio temporal
-    updateWizardSession(sessionId, {
+    await updateWizardSession(sessionId, {
       datos: {
         ...datos,
         sitioGenerado: {
@@ -296,7 +296,7 @@ router.post('/regenerar-seccion', async (req, res) => {
       return res.status(400).json({ error: 'SessionId y sección son requeridos' });
     }
 
-    const session = getWizardSession(sessionId);
+    const session = await getWizardSession(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Sesión no encontrada' });
     }
@@ -344,7 +344,7 @@ router.post('/finalizar', async (req, res) => {
       return res.status(400).json({ error: 'Email no válido' });
     }
 
-    const session = getWizardSession(sessionId);
+    const session = await getWizardSession(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Sesión no encontrada' });
     }
@@ -360,7 +360,7 @@ router.post('/finalizar', async (req, res) => {
     const passwordHash = await bcrypt.hash(passwordTemporal, 10);
 
     // Crear usuario
-    const usuarioId = createUser({
+    const usuarioId = await createUser({
       email: email.toLowerCase().trim(),
       passwordHash,
       nombre: nombre?.trim() || datos.nombreNegocio,
@@ -368,7 +368,7 @@ router.post('/finalizar', async (req, res) => {
     });
 
     // Crear cliente
-    const clienteId = createCliente({
+    const clienteId = await createCliente({
       usuarioId,
       telefono: telefono?.trim() || datos.contacto?.telefono || null,
       empresa: datos.nombreNegocio,
@@ -376,7 +376,7 @@ router.post('/finalizar', async (req, res) => {
     });
 
     // Crear sitio
-    const sitioId = createSitio({
+    const sitioId = await createSitio({
       clienteId,
       nombre: datos.nombreNegocio,
       dominio: dominio?.toLowerCase().trim() || null,
@@ -395,7 +395,7 @@ router.post('/finalizar', async (req, res) => {
     // Crear secciones
     const secciones = ['hero', 'servicios', 'nosotros', 'contacto'];
     for (let i = 0; i < secciones.length; i++) {
-      createSeccion({
+      await createSeccion({
         sitioId,
         nombre: secciones[i],
         tipo: secciones[i],
@@ -405,7 +405,7 @@ router.post('/finalizar', async (req, res) => {
     }
 
     // Marcar sesión como completada
-    completeWizardSession(sessionId, { sitioId, email });
+    await completeWizardSession(sessionId, { sitioId, email });
 
     res.json({
       success: true,
@@ -447,7 +447,7 @@ router.post('/finalizar', async (req, res) => {
  */
 router.get('/session/:sessionId', async (req, res) => {
   try {
-    const session = getWizardSession(req.params.sessionId);
+    const session = await getWizardSession(req.params.sessionId);
 
     if (!session) {
       return res.status(404).json({ error: 'Sesión no encontrada' });

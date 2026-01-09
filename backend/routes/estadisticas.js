@@ -20,7 +20,7 @@ const { obtenerAnalytics } = require('../services/cloudflareService');
  */
 router.get('/general', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const stats = getEstadisticasGenerales();
+    const stats = await getEstadisticasGenerales();
 
     // Intentar obtener stats de Hetzner
     let serverStats = null;
@@ -55,14 +55,14 @@ router.get('/general', requireAuth, requireAdmin, async (req, res) => {
  */
 router.get('/sitio/:sitioId', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
     }
 
     // Stats de la base de datos
-    const statsDB = getEstadisticasSitio(sitio.id, 30);
+    const statsDB = await getEstadisticasSitio(sitio.id, 30);
 
     // Stats de Cloudflare si hay dominio
     let statsCloudflare = null;
@@ -106,9 +106,9 @@ router.get('/resumen', requireAuth, async (req, res) => {
 
     if (req.user.rol === 'admin') {
       const { getAllSitios } = require('../database/db');
-      sitios = getAllSitios();
+      sitios = await getAllSitios();
     } else {
-      sitios = getSitiosByClienteId(req.cliente.id);
+      sitios = await getSitiosByClienteId(req.cliente.id);
     }
 
     const resumen = {

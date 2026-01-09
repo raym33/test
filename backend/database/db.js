@@ -328,35 +328,48 @@ async function getEstadisticasSitio(sitioId, dias = 30) {
 }
 
 module.exports = {
+  // Helpers exportados para uso directo
+  runQuery,
+  getOne,
+  getAll,
+  // Usuarios
   getUserByEmail,
   getUserById,
   createUser,
   updateUserPassword,
   updateUserLastAccess,
+  // Clientes
   createCliente,
   getClienteByUsuarioId,
   getAllClientes,
   updateClienteClaudeCalls,
   getClienteClaudeCalls,
+  // Sitios
   createSitio,
   getSitioById,
   getSitiosByClienteId,
   getAllSitios,
   updateSitio,
   deleteSitio,
+  // Plantillas
   getAllPlantillas,
   getPlantillaById,
+  // Secciones
   createSeccion,
   getSeccionesBySitioId,
   updateSeccion,
+  // Historial
   createCambioHistorial,
   getHistorialBySitioId,
+  // Archivos
   createArchivo,
   getArchivosBySitioId,
+  // Wizard
   createWizardSession,
   getWizardSession,
   updateWizardSession,
   completeWizardSession,
+  // Estadísticas
   getEstadisticasGenerales,
   getEstadisticasSitio
 };

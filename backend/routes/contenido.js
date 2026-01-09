@@ -44,7 +44,7 @@ const upload = multer({
  */
 router.get('/:sitioId', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -54,7 +54,7 @@ router.get('/:sitioId', requireAuth, requireSiteAccess, async (req, res) => {
     const html = await leerHTML(sitio.ruta_archivos);
 
     // Obtener secciones
-    const secciones = getSeccionesBySitioId(sitio.id);
+    const secciones = await getSeccionesBySitioId(sitio.id);
 
     res.json({
       success: true,
@@ -85,7 +85,7 @@ router.get('/:sitioId', requireAuth, requireSiteAccess, async (req, res) => {
  */
 router.post('/:sitioId/actualizar', requireAuth, requireSiteAccess, upload.single('imagen'), async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -93,7 +93,7 @@ router.post('/:sitioId/actualizar', requireAuth, requireSiteAccess, upload.singl
 
     // Verificar límite de llamadas a Claude
     if (req.cliente) {
-      const llamadasHoy = getClienteClaudeCalls(req.cliente.id);
+      const llamadasHoy = await getClienteClaudeCalls(req.cliente.id);
       const limite = parseInt(process.env.MAX_CLAUDE_CALLS_PER_DAY) || 20;
 
       if (llamadasHoy >= limite) {
@@ -123,7 +123,7 @@ router.post('/:sitioId/actualizar', requireAuth, requireSiteAccess, upload.singl
       imagenUrl = resultado.ruta;
 
       // Guardar referencia en DB
-      createArchivo({
+      await createArchivo({
         sitioId: sitio.id,
         nombreOriginal: resultado.nombreOriginal,
         nombreGuardado: resultado.nombreGuardado,
@@ -158,7 +158,7 @@ router.post('/:sitioId/actualizar', requireAuth, requireSiteAccess, upload.singl
     await guardarHTML(sitio.ruta_archivos, htmlNuevo);
 
     // Registrar el cambio
-    createCambioHistorial({
+    await createCambioHistorial({
       sitioId: sitio.id,
       usuarioId: req.user.id,
       tipo: 'actualizacion_seccion',
@@ -170,7 +170,7 @@ router.post('/:sitioId/actualizar', requireAuth, requireSiteAccess, upload.singl
 
     // Incrementar contador de llamadas Claude
     if (req.cliente) {
-      updateClienteClaudeCalls(req.cliente.id);
+      await updateClienteClaudeCalls(req.cliente.id);
     }
 
     // Purgar caché si hay dominio
@@ -212,7 +212,7 @@ router.post('/:sitioId/mejorar-texto', requireAuth, requireSiteAccess, async (re
       return res.status(400).json({ error: 'El texto es requerido' });
     }
 
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
     const textoMejorado = await mejorarTexto(texto, contexto || sitio?.nombre || 'web profesional');
 
     res.json({
@@ -233,7 +233,7 @@ router.post('/:sitioId/mejorar-texto', requireAuth, requireSiteAccess, async (re
  */
 router.get('/:sitioId/historial', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const historial = getHistorialBySitioId(req.params.sitioId, 50);
+    const historial = await getHistorialBySitioId(req.params.sitioId, 50);
 
     res.json({
       success: true,
@@ -258,7 +258,7 @@ router.get('/:sitioId/historial', requireAuth, requireSiteAccess, async (req, re
  */
 router.get('/:sitioId/backups', requireAuth, requireSiteAccess, async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -289,7 +289,7 @@ router.post('/:sitioId/restaurar', requireAuth, requireSiteAccess, async (req, r
       return res.status(400).json({ error: 'Nombre del backup es requerido' });
     }
 
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -298,7 +298,7 @@ router.post('/:sitioId/restaurar', requireAuth, requireSiteAccess, async (req, r
     const resultado = await restaurarBackup(sitio.ruta_archivos, nombreBackup);
 
     // Registrar la restauración
-    createCambioHistorial({
+    await createCambioHistorial({
       sitioId: sitio.id,
       usuarioId: req.user.id,
       tipo: 'restauracion_backup',
@@ -331,7 +331,7 @@ router.post('/:sitioId/restaurar', requireAuth, requireSiteAccess, async (req, r
  */
 router.post('/:sitioId/subir-imagen', requireAuth, requireSiteAccess, upload.single('imagen'), async (req, res) => {
   try {
-    const sitio = getSitioById(req.params.sitioId);
+    const sitio = await getSitioById(req.params.sitioId);
 
     if (!sitio) {
       return res.status(404).json({ error: 'Sitio no encontrado' });
@@ -344,7 +344,7 @@ router.post('/:sitioId/subir-imagen', requireAuth, requireSiteAccess, upload.sin
     const resultado = await guardarImagen(sitio.ruta_archivos, req.file.buffer, req.file.originalname);
 
     // Guardar referencia en DB
-    createArchivo({
+    await createArchivo({
       sitioId: sitio.id,
       nombreOriginal: resultado.nombreOriginal,
       nombreGuardado: resultado.nombreGuardado,
